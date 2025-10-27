@@ -71,7 +71,7 @@ for i, (key, info) in enumerate(params_dict.items()):
     ax_slider = ax_slider_panel.inset_axes([0.1, slider_y_start - i*slider_spacing, 
                                             0.55, 0.05])  
     sliders[key] = Slider(ax=ax_slider, label=info["label"],
-                          valmin=info["low"], valmax=info["high"], valinit=info["init"])
+                        valmin=info["low"], valmax=info["high"], valinit=info["init"])
 
 # --- Plot area ---
 ax_plot = fig.add_subplot(gs[0, 1:])
@@ -114,9 +114,11 @@ button = Button(reset_button_ax, "Reset", color="gold", hovercolor="skyblue")
 # --- Interactivity ---
 energy_enabled = True
 current_jet = grb.jet.TopHat
+q_val = 2
+spread_enabled = True
 
 def update(val=None):
-    global energy_enabled, current_jet
+    global energy_enabled, current_jet, q_val, spread_enabled
     new_params = init_dict.copy()
     new_params["E0"] = 10**sliders["logE0"].val
     new_params["n0"] = 10**sliders["logn0"].val
@@ -130,6 +132,8 @@ def update(val=None):
     new_params["b"] = sliders["b"].val
     new_params["L0"] = 10**sliders["logl0"].val if energy_enabled else 0.0
     new_params["jetType"] = current_jet
+    new_params["q"] = q_val
+    new_params["spread"] = spread_enabled
     line.set_ydata(grb.fluxDensity(t, nu_r, **new_params))
     ax_plot.relim()
     ax_plot.autoscale_view(scaley=True)
@@ -146,12 +150,27 @@ def energy_callback(label):
 def jet_callback(label):
     global current_jet
     current_jet = {"TopHat": grb.jet.TopHat,
-                   "Gaussian": grb.jet.Gaussian,
-                   "PowerLaw": grb.jet.PowerLaw}[label]
+                "Gaussian": grb.jet.Gaussian,
+                "PowerLaw": grb.jet.PowerLaw}[label]
     update()
+
+def q_callback(label):
+    global q_val
+    # Parse q from label, like "q=2" -> 2
+    q_val = int(label.split('=')[1])
+    update()
+
+def spread_callback(label):
+    global spread_enabled
+    # Parse boolean from label
+    spread_enabled = (label == "True")
+    update()
+
 
 radio_energy.on_clicked(energy_callback)
 radio_jet.on_clicked(jet_callback)
+radio_q.on_clicked(q_callback)
+radio_spread.on_clicked(spread_callback)
 
 def resetSliders(event):
     for s in sliders.values():
